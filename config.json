@@ -1,0 +1,15 @@
+{
+  "name": "Screenshotter",
+  "version": "1.0",
+  "slug": "screenshotter",
+  "description": "A service to take screenshots of web page.",
+  "startup": "application",
+  "boot": "auto",
+  "ports": {"3000/tcp": 3000},
+  "options": {
+    "url": "https://embed.windy.com"
+  },
+  "schema": {
+    "url": "str"
+  }
+}

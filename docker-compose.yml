@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  web-to-png:
+    image: web-to-png
+    restart: always
+    volumes:
+      - ./:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TZ=Europe/Warsaw
+
+
+  webserver:
+    image: nginx:alpine
+    restart: always
+    volumes:
+      - ./:/usr/share/nginx/html:ro
+    ports:
+      - "8081:80"
+    depends_on:
+      - web-to-png
