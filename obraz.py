@@ -39,9 +39,8 @@ async def screenshot_embedded_windy(filepath):
             '--use-fake-device-for-media-stream',
             '--autoplay-policy=no-user-gesture-required',
             '--disable-popup-blocking',
-            # Dodaj argumenty dotyczące zezwoleń dla lokalizacji
             '--enable-precise-location',
-            '--unsafely-treat-insecure-origin-as-secure="http://windy.com"',  # Zmień na odpowiednią witrynę
+            '--unsafely-treat-insecure-origin-as-secure="http://windy.com"', 
         
         ], executablePath='/usr/bin/google-chrome')
 
@@ -50,7 +49,7 @@ async def screenshot_embedded_windy(filepath):
     await page.goto(url, waitUntil='networkidle2', timeout=60000)
     
     # Czekanie na załadowanie mapy NIE POTRZEBNE
-    #await asyncio.sleep(5)  # Czekaj 5 sekund, aby upewnić się, że mapa się załadowała
+    #await asyncio.sleep(5)
     
     # Robienie zrzutu ekranu
     await page.screenshot({'path': filepath})
