@@ -7,9 +7,9 @@ from datetime import datetime
 import time
 
 # Zmienne konfiguracyjne
-MQTT_USER = "user"
-MQTT_PASSWORD = "pass"
-MQTT_BROKER = "192.168.1.59"
+MQTT_USER = "user" #Nazwa użytkownika serwera mqtt
+MQTT_PASSWORD = "pass" #Hasło serwera mqtt
+MQTT_BROKER = "192.168.1.45" #Adres serwera mqtt
 MQTT_PORT = 1883
 MQTT_KEEPALIVE = 60
 
