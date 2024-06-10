@@ -2,28 +2,24 @@ import asyncio
 from pyppeteer import launch
 import os
 import paho.mqtt.client as mqtt
+import re
+from datetime import datetime
+import time
 
-#ZMIENNE#
+# Zmienne konfiguracyjne
+MQTT_USER = "user"
+MQTT_PASSWORD = "pass"
+MQTT_BROKER = "192.168.1.59"
+MQTT_PORT = 1883
+MQTT_KEEPALIVE = 60
 
-# URL strony, którą chcemy zrzutować
-url = 'https://embed.windy.com/embed2.html?lat=50.370&lon=19.808&detailLat=50.456&detailLon=19.764&width=650&height=450&zoom=10&level=surface&overlay=radar&product=radar&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1'
-
-#TESTOWY URL
-#url = 'https://embed.windy.com/embed2.html?lat=39.812&lon=-86.774&detailLat=50.456&detailLon=19.764&width=650&height=450&zoom=8&level=surface&overlay=radar&product=radar&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1'
-
-# Nazwa pliku
-file_path = 'windy.png'
-
-#####################################################
-
-
-
-async def screenshot_embedded_windy(filepath):
-    # Sprawdź, czy plik istnieje
-    if os.path.exists(filepath):
-        os.remove(filepath)  # Usuń plik, jeśli istnieje
-
-    browser = await launch(headless=True, args=[
+# Funkcja do robienia zrzutu ekranu
+async def screenshot_embedded_windy(url, filepath):
+    try:
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        
+        browser = await launch(headless=True, args=[
             '--disable-infobars',
             '--disable-extensions',
             '--disable-gpu',
@@ -40,51 +36,49 @@ async def screenshot_embedded_windy(filepath):
             '--autoplay-policy=no-user-gesture-required',
             '--disable-popup-blocking',
             '--enable-precise-location',
-            '--unsafely-treat-insecure-origin-as-secure="http://windy.com"', 
-        
         ], executablePath='/usr/bin/google-chrome')
 
+        page = await browser.newPage()
+        await page.goto(url, waitUntil='networkidle2', timeout=60000)
+        await page.screenshot({'path': filepath})
+        await browser.close()
+        log(f"Zrzut ekranu zapisany pomyślnie: {filepath}")
+    except Exception as e:
+        log(f"Błąd podczas robienia zrzutu ekranu: {e}")
 
-    page = await browser.newPage()
-    await page.goto(url, waitUntil='networkidle2', timeout=60000)
-    
-    # Czekanie na załadowanie mapy NIE POTRZEBNE
-    #await asyncio.sleep(5)
-    
-    # Robienie zrzutu ekranu
-    await page.screenshot({'path': filepath})
-    
-    await browser.close()
+# Funkcja logująca z dodaniem daty i godziny
+def log(message):
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print(f"[{now}] {message}")
 
-
-
-
-
-
-# Callback wywoływany, gdy klient otrzyma odpowiedź CONNACK od serwera.
+# Callback wywoływany, gdy klient otrzyma odpowiedź CONNACK od serwera
 def on_connect(client, userdata, flags, reason_code, properties):
-    print(f"Połączono z wynikiem: {reason_code}")
-    # Subskrypcja w funkcji on_connect() oznacza, że jeśli połączenie zostanie
-    # utracone i nastąpi ponowne połączenie, subskrypcje zostaną odnowione.
-    client.subscribe("pc/image")
+    log(f"Połączono z wynikiem: {reason_code}")
+    client.subscribe("pc/image/#")
 
-# Callback wywoływany, gdy od serwera otrzymamy wiadomość PUBLISH.
+# Callback wywoływany, gdy od serwera otrzymamy wiadomość PUBLISH
 def on_message(client, userdata, msg):
-    print(f"{msg.topic} {str(msg.payload)}")
-    if msg.topic == "pc/image" and msg.payload.decode() == "windy":
-        print(f"Tworzenie obrazka")
-        # Uruchomienie funkcji asynchronicznej
-        asyncio.run(screenshot_embedded_windy(file_path))
-        # Sprawdzenie czy utworzono obrazek
-        if os.path.exists(file_path):
-            print(f"Utworzono obrazek pomyślnie")
+    log(f"Otrzymano wiadomość na temat: {msg.topic} z payloadem: {msg.payload.decode()}")
+    
+    topic_parts = msg.topic.split('/')
+    if len(topic_parts) == 3 and topic_parts[0] == "pc" and topic_parts[1] == "image":
+        filename_variable = topic_parts[2]
+        url = msg.payload.decode()
+
+        # Dodaj rozszerzenie .png do nazwy pliku
+        file_path = f"{filename_variable}.png"
+
+        # Sprawdzenie poprawności nazwy pliku i URL
+        if re.match(r'^[\w-]+\.png$', file_path) and url.startswith("http"):
+            log(f"Tworzenie obrazka {file_path} z URL: {url}")
+            # Użycie asyncio.run() aby uruchomić asynchroniczną funkcję
+            asyncio.run(screenshot_embedded_windy(url, file_path))
         else:
-            print(f"Niepowodzenie przy tworzeniu obrazka")
-
+            log("Błędny format nazwy pliku lub URL")
     else:
-        print(f"Otrzymano payload: {str(msg.payload)}")
+        log("Niewłaściwy temat")
 
-# Utworzenie klienta z użyciem nowego API Callback (dla paho-mqtt v2.0.0)
+# Utworzenie instancji klienta z użyciem nowego API Callback
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 
 # Ustawienie callbacków
@@ -92,12 +86,21 @@ client.on_connect = on_connect
 client.on_message = on_message
 
 # Ustawienie nazwy użytkownika i hasła
-client.username_pw_set("mqtt", "123456")
+client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
 
-# Połączenie z brokerem Mosquitto
-broker_address = "localhost"
-client.connect(broker_address, 1883, 60)
+# Funkcja do ponawiania połączeń z brokerem MQTT
+def connect_with_retries(client, broker_address, port, keepalive):
+    while True:
+        try:
+            client.connect(broker_address, port, keepalive)
+            return
+        except Exception as e:
+            log(f"Nie udało się połączyć z brokerem MQTT: {e}")
+            log("Ponawianie połączenia za 10 sekund...")
+            time.sleep(10)
 
-# Zablokowanie wywołania, które przetwarza ruch sieciowy, rozsyła callbacki i
-# obsługuje ponowne łączenie się.
+# Próba połączenia z brokerem bez limitu prób
+connect_with_retries(client, MQTT_BROKER, MQTT_PORT, MQTT_KEEPALIVE)
+
+# Zablokowanie wywołania przetwarzającego ruch sieciowy, rozsyłającego callbacki i obsługującego ponowne łączenie
 client.loop_forever()
