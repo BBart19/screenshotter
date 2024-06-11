@@ -6,7 +6,7 @@ The "Screenshotter" program is a tool for automatically taking screenshots of we
 ## Features
 1. **Receiving URLs via MQTT**: The program listens to the MQTT topic `pc/image/(file name)` with payload containing the URL of the web page to be screenshot.
 2. **Generating the file name**: The PNG file name is generated based on the MQTT topic.
-3. **Taking the screenshot**: A Python script uses a browser automation library (e.g., Selenium) to capture the screenshot of the web page.
+3. **Taking the screenshot**: A Python script uses a browser automation library to capture the screenshot of the web page.
 4. **Serving the screenshot**: The screenshots are saved in a directory served by an HTTP server running in the Docker container, making them accessible via the container's local IP address.
 
 ## Usage with Home Assistant
@@ -20,7 +20,7 @@ Program "Screenshotter" jest narzędziem do automatycznego wykonywania zrzutów 
 ## Funkcje
 1. **Odbieranie URL poprzez MQTT**: Program nasłuchuje na temat MQTT `pc/image/(nazwa pliku)` z payload zawierającym URL strony internetowej do zrzutu ekranu.
 2. **Generowanie nazwy pliku**: Nazwa pliku PNG jest generowana na podstawie tematu MQTT.
-3. **Tworzenie zrzutu ekranu**: Skrypt w python korzysta z biblioteki do automatyzacji przeglądarek (np. Selenium) do wykonania zrzutu ekranu strony internetowej.
+3. **Tworzenie zrzutu ekranu**: Skrypt w python korzysta z biblioteki do automatyzacji przeglądarek do wykonania zrzutu ekranu strony internetowej.
 4. **Udostępnianie zrzutu ekranu**: Zrzuty ekranu są zapisywane w katalogu udostępnianym przez serwer HTTP działający w kontenerze Docker, dzięki czemu są dostępne za pośrednictwem lokalnego adresu IP kontenera.
 
 ## Użycie z Home Assistant
