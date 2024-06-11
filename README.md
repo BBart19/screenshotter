@@ -18,7 +18,7 @@ The "Screenshotter" program can be used with Home Assistant to send messages wit
 Program "Screenshotter" jest narzędziem do automatycznego wykonywania zrzutów ekranu stron internetowych. Działa w środowisku Docker, co zapewnia izolację i łatwą skalowalność. Program pobiera URL strony internetowej z payloadu MQTT, generuje zrzut ekranu, a następnie udostępnia wynikowy plik PNG przez lokalny serwer HTTP w kontenerze Docker.
 
 ## Funkcje
-1. **Odbieranie URL poprzez MQTT**: Program nasłuchuje na temat MQTT `pc/image/(file name)` i oczekuje na wiadomości zawierające URL strony internetowej do zrzutu ekranu.
+1. **Odbieranie URL poprzez MQTT**: Program nasłuchuje na temat MQTT `pc/image/(nazwa pliku)` i oczekuje na wiadomości zawierające URL strony internetowej do zrzutu ekranu.
 2. **Generowanie nazwy pliku**: Nazwa pliku PNG jest generowana na podstawie tematu MQTT.
 3. **Tworzenie zrzutu ekranu**: Pythonowy skrypt korzysta z biblioteki do automatyzacji przeglądarek (np. Selenium) do wykonania zrzutu ekranu strony internetowej.
 4. **Udostępnianie zrzutu ekranu**: Zrzuty ekranu są zapisywane w katalogu udostępnianym przez serwer HTTP działający w kontenerze Docker, dzięki czemu są dostępne za pośrednictwem lokalnego adresu IP kontenera.
